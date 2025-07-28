@@ -125,7 +125,7 @@ const Index = () => {
     setIsLoading(true);
     
     // Use a simple toast without ID management
-    const toastId = toast("Generating favicons...", {
+    toast("Generating favicons...", {
       duration: Infinity,
     });
 
