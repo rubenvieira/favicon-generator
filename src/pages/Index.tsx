@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
 import EmojiPalette from "@/components/EmojiPalette";
-import * as ICO from "icojs";
 import { Buffer } from "buffer";
 
 interface GeneratedFavicon {
@@ -29,6 +28,48 @@ const FAVICON_SIZES = [
   { size: 192, name: "android-chrome-192x192.png" },
   { size: 512, name: "android-chrome-512x512.png" },
 ];
+
+// Helper function to create ICO file from multiple PNG images
+const createIcoFile = async (pngBuffers: Buffer[]): Promise<Blob> => {
+  // Simple ICO header
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // Reserved
+  header.writeUInt16LE(1, 2); // ICO type
+  header.writeUInt16LE(pngBuffers.length, 4); // Number of images
+
+  let offset = 6 + (pngBuffers.length * 16); // Header + directory entries
+  const directoryEntries = [];
+  const imageData = [];
+
+  for (let i = 0; i < pngBuffers.length; i++) {
+    const buffer = pngBuffers[i];
+    const width = icoSizes[i];
+    const height = icoSizes[i];
+
+    // Directory entry
+    const entry = Buffer.alloc(16);
+    entry.writeUInt8(width, 0); // Width
+    entry.writeUInt8(height, 1); // Height
+    entry.writeUInt8(0, 2); // Color palette
+    entry.writeUInt8(0, 3); // Reserved
+    entry.writeUInt16LE(1, 4); // Color planes
+    entry.writeUInt16LE(32, 6); // Bits per pixel
+    entry.writeUInt32LE(buffer.length, 8); // Image size
+    entry.writeUInt32LE(offset, 12); // Image offset
+    directoryEntries.push(entry);
+
+    imageData.push(buffer);
+    offset += buffer.length;
+  }
+
+  const icoBuffer = Buffer.concat([
+    header,
+    ...directoryEntries,
+    ...imageData
+  ]);
+
+  return new Blob([icoBuffer], { type: 'image/x-icon' });
+};
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("image");
@@ -47,7 +88,7 @@ const Index = () => {
         return;
       }
       setSelectedImage(file);
-      setSelectedEmoji(""); // Clear emoji
+      setSelectedEmoji("");
       setGeneratedFavicons([]);
       setGeneratedIco(null);
       const reader = new FileReader();
@@ -62,7 +103,7 @@ const Index = () => {
     const emoji = event.target.value;
     setSelectedEmoji(emoji);
     if (emoji) {
-      setSelectedImage(null); // Clear image
+      setSelectedImage(null);
       setImagePreview(null);
     }
     setGeneratedFavicons([]);
@@ -72,55 +113,11 @@ const Index = () => {
   const handleEmojiSelect = (emoji: string) => {
     setSelectedEmoji(emoji);
     if (emoji) {
-      setSelectedImage(null); // Clear image
+      setSelectedImage(null);
       setImagePreview(null);
     }
     setGeneratedFavicons([]);
     setGeneratedIco(null);
-  };
-
-  const generateFaviconFromImage = (
-    image: HTMLImageElement,
-    size: number,
-    filename: string,
-  ): Promise<GeneratedFavicon> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(image, 0, 0, size, size);
-        const url = canvas.toDataURL("image/png");
-        resolve({ size: `${size}x${size}`, url, filename });
-      } else {
-        reject(new Error("Could not get canvas context."));
-      }
-    });
-  };
-
-  const generateFaviconFromEmoji = (
-    emoji: string,
-    size: number,
-    filename: string,
-  ): Promise<GeneratedFavicon> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.clearRect(0, 0, size, size);
-        ctx.font = `${size * 0.8}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(emoji, size / 2, size / 2 + size * 0.05); // Small vertical adjustment for better centering
-        const url = canvas.toDataURL("image/png");
-        resolve({ size: `${size}x${size}`, url, filename });
-      } else {
-        reject(new Error("Could not get canvas context."));
-      }
-    });
   };
 
   const handleGenerate = async () => {
@@ -128,111 +125,64 @@ const Index = () => {
     setGeneratedIco(null);
     const toastId = showLoading("Generating favicons...");
 
-    const generateFromImage = () => {
-      return new Promise<GeneratedFavicon[]>((resolve, reject) => {
-        if (!selectedImage) return reject(new Error("No image selected."));
-        const image = new Image();
-        image.src = URL.createObjectURL(selectedImage);
-        image.onload = async () => {
-          try {
-            const favicons = await Promise.all(
-              FAVICON_SIZES.map((s) => generateFaviconFromImage(image, s.size, s.name)),
-            );
-            URL.revokeObjectURL(image.src);
-            resolve(favicons);
-          } catch (err) {
-            reject(err);
-          }
-        };
-        image.onerror = () => {
-          URL.revokeObjectURL(image.src);
-          reject(new Error("Could not load the image."));
-        };
-      });
-    };
-
-    const generateFromEmoji = () => {
-      return new Promise<GeneratedFavicon[]>(async (resolve, reject) => {
-        if (!selectedEmoji) return reject(new Error("No emoji selected."));
-        try {
-          const emoji = [...selectedEmoji][0]; // Use the first grapheme
-          const favicons = await Promise.all(
-            FAVICON_SIZES.map((s) => generateFaviconFromEmoji(emoji, s.size, s.name)),
-          );
-          resolve(favicons);
-        } catch (err) {
-          reject(err);
-        }
-      });
-    };
-
     try {
-      const favicons = activeTab === 'image' ? await generateFromImage() : await generateFromEmoji();
-      setGeneratedFavicons(favicons);
-
-      // ICO Generation
-      await (async () => {
-        const icoSizes = [16, 32, 48];
-        const dataUrlToUint8Array = (dataUrl: string) => {
-            const base64 = dataUrl.split(',')[1];
-            if (!base64) return new Uint8Array(0);
-            const binaryString = atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes;
-        };
-
-        const generatePngBuffer = (source: HTMLImageElement | string, size: number): Buffer => {
-            const canvas = document.createElement("canvas");
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) throw new Error("Could not get canvas context.");
-
-            if (typeof source === 'string') { // Emoji
-                ctx.clearRect(0, 0, size, size);
-                ctx.font = `${size * 0.8}px sans-serif`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(source, size / 2, size / 2 + size * 0.05);
-            } else { // Image
-                ctx.drawImage(source, 0, 0, size, size);
-            }
-            return Buffer.from(dataUrlToUint8Array(canvas.toDataURL('image/png')));
-        };
+      const favicons = [];
+      const icoSizes = [16, 32, 48];
+      
+      // Generate PNG favicons
+      for (const size of FAVICON_SIZES) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size.size;
+        canvas.height = size.size;
+        const ctx = canvas.getContext('2d');
 
         if (activeTab === 'image' && selectedImage) {
-            return new Promise<void>((resolve, reject) => {
-                const image = new Image();
-                image.src = URL.createObjectURL(selectedImage);
-                image.onload = async () => {
-                    try {
-                        const pngBuffers = icoSizes.map(size => generatePngBuffer(image, size));
-                        const icoBuffer = ICO.encode(pngBuffers, "image/png"); // Using ICO.encode with correct parameters
-                        const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
-                        setGeneratedIco(URL.createObjectURL(blob));
-                        URL.revokeObjectURL(image.src);
-                        resolve();
-                    } catch (e) {
-                        reject(e);
-                    }
-                };
-                image.onerror = () => {
-                    URL.revokeObjectURL(image.src);
-                    reject(new Error("Could not load image for ICO generation."));
-                };
-            });
+          const img = new Image();
+          img.src = URL.createObjectURL(selectedImage);
+          await new Promise(resolve => img.onload = resolve);
+          ctx.drawImage(img, 0, 0, size.size, size.size);
+          URL.revokeObjectURL(img.src);
         } else if (activeTab === 'emoji' && selectedEmoji) {
-            const emoji = [...selectedEmoji][0];
-            const pngBuffers = icoSizes.map(size => generatePngBuffer(emoji, size));
-            const icoBuffer = ICO.encode(pngBuffers, "image/png"); // Using ICO.encode with correct parameters
-            const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
-            setGeneratedIco(URL.createObjectURL(blob));
+          const emoji = [...selectedEmoji][0];
+          ctx.font = `${size.size * 0.8}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(emoji, size.size / 2, size.size / 2 + size.size * 0.05);
         }
-      })();
+
+        const dataUrl = canvas.toDataURL('image/png');
+        favicons.push({
+          size: `${size.size}x${size.size}`,
+          url: dataUrl,
+          filename: size.name
+        });
+      }
+
+      setGeneratedFavicons(favicons);
+
+      // Create ICO file
+      const icoCanvas = document.createElement('canvas');
+      icoCanvas.width = 32;
+      icoCanvas.height = 32;
+      const icoCtx = icoCanvas.getContext('2d');
+
+      if (activeTab === 'image' && selectedImage) {
+        const img = new Image();
+        img.src = URL.createObjectURL(selectedImage);
+        await new Promise(resolve => img.onload = resolve);
+        icoCtx.drawImage(img, 0, 0, 32, 32);
+        URL.revokeObjectURL(img.src);
+      } else if (activeTab === 'emoji' && selectedEmoji) {
+        const emoji = [...selectedEmoji][0];
+        icoCtx.font = '26px sans-serif';
+        icoCtx.textAlign = "center";
+        icoCtx.textBaseline = "middle";
+        icoCtx.fillText(emoji, 16, 16);
+      }
+
+      const icoDataUrl = icoCanvas.toDataURL('image/png');
+      const icoBlob = new Blob([icoDataUrl.split(',')[1]], { type: 'image/x-icon' });
+      setGeneratedIco(URL.createObjectURL(icoBlob));
 
       dismissToast(toastId);
       showSuccess("Favicons generated successfully!");
