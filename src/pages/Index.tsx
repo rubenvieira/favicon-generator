@@ -29,6 +29,8 @@ const FAVICON_SIZES = [
   { size: 512, name: "android-chrome-512x512.png" },
 ];
 
+const icoSizes = [16, 32, 48]; // Sizes for ICO file
+
 // Proper ICO file format constants
 const ICO_HEADER_SIZE = 6;
 const ICO_DIR_ENTRY_SIZE = 16;
@@ -127,7 +129,6 @@ const Index = () => {
 
     try {
       const favicons = [];
-      const icoSizes = [16, 32, 48];
       
       // Generate PNG favicons
       for (const size of FAVICON_SIZES) {
@@ -161,8 +162,34 @@ const Index = () => {
       setGeneratedFavicons(favicons);
 
       // Create ICO file
-      const pngBuffers = favicons.map(f => Buffer.from(f.url.split(',')[1], 'base64'));
-      const icoBlob = await createIcoFile(pngBuffers);
+      const icoBuffers = [];
+      for (const size of icoSizes) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        if (activeTab === 'image' && selectedImage) {
+          const img = new Image();
+          img.src = URL.createObjectURL(selectedImage);
+          await new Promise(resolve => img.onload = resolve);
+          ctx.drawImage(img, 0, 0, size, size);
+          URL.revokeObjectURL(img.src);
+        } else if (activeTab === 'emoji' && selectedEmoji) {
+          const emoji = [...selectedEmoji][0];
+          ctx.font = `${size * 0.8}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(emoji, size / 2, size / 2 + size * 0.05);
+        }
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Data = dataUrl.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        icoBuffers.push(buffer);
+      }
+
+      const icoBlob = await createIcoFile(icoBuffers);
       setGeneratedIco(URL.createObjectURL(icoBlob));
 
       dismissToast(toastId);
