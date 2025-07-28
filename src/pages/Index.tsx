@@ -29,27 +29,29 @@ const FAVICON_SIZES = [
   { size: 512, name: "android-chrome-512x512.png" },
 ];
 
-// Helper function to create ICO file from multiple PNG images
+// Proper ICO file format constants
+const ICO_HEADER_SIZE = 6;
+const ICO_DIR_ENTRY_SIZE = 16;
+
+// Helper function to create proper ICO file
 const createIcoFile = async (pngBuffers: Buffer[]): Promise<Blob> => {
-  // Simple ICO header
-  const header = Buffer.alloc(6);
+  // ICO header
+  const header = Buffer.alloc(ICO_HEADER_SIZE);
   header.writeUInt16LE(0, 0); // Reserved
   header.writeUInt16LE(1, 2); // ICO type
   header.writeUInt16LE(pngBuffers.length, 4); // Number of images
 
-  let offset = 6 + (pngBuffers.length * 16); // Header + directory entries
+  // Directory entries
   const directoryEntries = [];
-  const imageData = [];
+  let offset = ICO_HEADER_SIZE + (pngBuffers.length * ICO_DIR_ENTRY_SIZE);
 
   for (let i = 0; i < pngBuffers.length; i++) {
     const buffer = pngBuffers[i];
-    const width = icoSizes[i];
-    const height = icoSizes[i];
-
-    // Directory entry
-    const entry = Buffer.alloc(16);
-    entry.writeUInt8(width, 0); // Width
-    entry.writeUInt8(height, 1); // Height
+    const size = icoSizes[i];
+    
+    const entry = Buffer.alloc(ICO_DIR_ENTRY_SIZE);
+    entry.writeUInt8(size, 0); // Width
+    entry.writeUInt8(size, 1); // Height
     entry.writeUInt8(0, 2); // Color palette
     entry.writeUInt8(0, 3); // Reserved
     entry.writeUInt16LE(1, 4); // Color planes
@@ -57,15 +59,13 @@ const createIcoFile = async (pngBuffers: Buffer[]): Promise<Blob> => {
     entry.writeUInt32LE(buffer.length, 8); // Image size
     entry.writeUInt32LE(offset, 12); // Image offset
     directoryEntries.push(entry);
-
-    imageData.push(buffer);
     offset += buffer.length;
   }
 
   const icoBuffer = Buffer.concat([
     header,
     ...directoryEntries,
-    ...imageData
+    ...pngBuffers
   ]);
 
   return new Blob([icoBuffer], { type: 'image/x-icon' });
@@ -161,27 +161,8 @@ const Index = () => {
       setGeneratedFavicons(favicons);
 
       // Create ICO file
-      const icoCanvas = document.createElement('canvas');
-      icoCanvas.width = 32;
-      icoCanvas.height = 32;
-      const icoCtx = icoCanvas.getContext('2d');
-
-      if (activeTab === 'image' && selectedImage) {
-        const img = new Image();
-        img.src = URL.createObjectURL(selectedImage);
-        await new Promise(resolve => img.onload = resolve);
-        icoCtx.drawImage(img, 0, 0, 32, 32);
-        URL.revokeObjectURL(img.src);
-      } else if (activeTab === 'emoji' && selectedEmoji) {
-        const emoji = [...selectedEmoji][0];
-        icoCtx.font = '26px sans-serif';
-        icoCtx.textAlign = "center";
-        icoCtx.textBaseline = "middle";
-        icoCtx.fillText(emoji, 16, 16);
-      }
-
-      const icoDataUrl = icoCanvas.toDataURL('image/png');
-      const icoBlob = new Blob([icoDataUrl.split(',')[1]], { type: 'image/x-icon' });
+      const pngBuffers = favicons.map(f => Buffer.from(f.url.split(',')[1], 'base64'));
+      const icoBlob = await createIcoFile(pngBuffers);
       setGeneratedIco(URL.createObjectURL(icoBlob));
 
       dismissToast(toastId);
