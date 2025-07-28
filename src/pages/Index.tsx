@@ -13,14 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
 import EmojiPalette from "@/components/EmojiPalette";
-import * as ICO from "icojs"; // Corrected import for icojs
+import * as ICO from "icojs";
 import { Buffer } from "buffer";
 
 interface GeneratedFavicon {
   size: string;
   url: string;
   filename: string;
-
 }
 
 const FAVICON_SIZES = [
@@ -212,7 +211,7 @@ const Index = () => {
                 image.onload = async () => {
                     try {
                         const pngBuffers = icoSizes.map(size => generatePngBuffer(image, size));
-                        const icoBuffer = ICO.encode(pngBuffers); // Using ICO.encode
+                        const icoBuffer = ICO.encode(pngBuffers, "image/png"); // Using ICO.encode with correct parameters
                         const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
                         setGeneratedIco(URL.createObjectURL(blob));
                         URL.revokeObjectURL(image.src);
@@ -229,7 +228,7 @@ const Index = () => {
         } else if (activeTab === 'emoji' && selectedEmoji) {
             const emoji = [...selectedEmoji][0];
             const pngBuffers = icoSizes.map(size => generatePngBuffer(emoji, size));
-            const icoBuffer = ICO.encode(pngBuffers); // Using ICO.encode
+            const icoBuffer = ICO.encode(pngBuffers, "image/png"); // Using ICO.encode with correct parameters
             const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
             setGeneratedIco(URL.createObjectURL(blob));
         }
