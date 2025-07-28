@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
 import EmojiPalette from "@/components/EmojiPalette";
+import toIco from "to-ico";
 
 interface GeneratedFavicon {
   size: string;
@@ -35,6 +36,7 @@ const Index = () => {
   const [selectedEmoji, setSelectedEmoji] = useState<string>("");
   const [generatedFavicons, setGeneratedFavicons] = useState<GeneratedFavicon[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [generatedIco, setGeneratedIco] = useState<string | null>(null);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -46,6 +48,7 @@ const Index = () => {
       setSelectedImage(file);
       setSelectedEmoji(""); // Clear emoji
       setGeneratedFavicons([]);
+      setGeneratedIco(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -62,6 +65,7 @@ const Index = () => {
       setImagePreview(null);
     }
     setGeneratedFavicons([]);
+    setGeneratedIco(null);
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -71,6 +75,7 @@ const Index = () => {
       setImagePreview(null);
     }
     setGeneratedFavicons([]);
+    setGeneratedIco(null);
   };
 
   const generateFaviconFromImage = (
@@ -119,6 +124,7 @@ const Index = () => {
 
   const handleGenerate = async () => {
     setIsLoading(true);
+    setGeneratedIco(null);
     const toastId = showLoading("Generating favicons...");
 
     const generateFromImage = () => {
@@ -162,6 +168,71 @@ const Index = () => {
     try {
       const favicons = activeTab === 'image' ? await generateFromImage() : await generateFromEmoji();
       setGeneratedFavicons(favicons);
+
+      // ICO Generation
+      await (async () => {
+        const icoSizes = [16, 32, 48];
+        const dataUrlToUint8Array = (dataUrl: string) => {
+            const base64 = dataUrl.split(',')[1];
+            if (!base64) return new Uint8Array(0);
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
+        };
+
+        const generatePngBuffer = (source: HTMLImageElement | string, size: number): Uint8Array => {
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("Could not get canvas context.");
+
+            if (typeof source === 'string') { // Emoji
+                ctx.clearRect(0, 0, size, size);
+                ctx.font = `${size * 0.8}px sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(source, size / 2, size / 2 + size * 0.05);
+            } else { // Image
+                ctx.drawImage(source, 0, 0, size, size);
+            }
+            return dataUrlToUint8Array(canvas.toDataURL('image/png'));
+        };
+
+        if (activeTab === 'image' && selectedImage) {
+            return new Promise<void>((resolve, reject) => {
+                const image = new Image();
+                image.src = URL.createObjectURL(selectedImage);
+                image.onload = async () => {
+                    try {
+                        const pngBuffers = icoSizes.map(size => generatePngBuffer(image, size));
+                        const icoBuffer = await toIco(pngBuffers);
+                        const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
+                        setGeneratedIco(URL.createObjectURL(blob));
+                        URL.revokeObjectURL(image.src);
+                        resolve();
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                image.onerror = () => {
+                    URL.revokeObjectURL(image.src);
+                    reject(new Error("Could not load image for ICO generation."));
+                };
+            });
+        } else if (activeTab === 'emoji' && selectedEmoji) {
+            const emoji = [...selectedEmoji][0];
+            const pngBuffers = icoSizes.map(size => generatePngBuffer(emoji, size));
+            const icoBuffer = await toIco(pngBuffers);
+            const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
+            setGeneratedIco(URL.createObjectURL(blob));
+        }
+      })();
+
       dismissToast(toastId);
       showSuccess("Favicons generated successfully!");
     } catch (err: any) {
@@ -265,6 +336,20 @@ const Index = () => {
                 <h3 className="text-2xl font-semibold text-center">
                   3. Download Your Favicons
                 </h3>
+                {generatedIco && (
+                    <div className="p-4 bg-secondary rounded-lg text-center">
+                        <h4 className="text-lg font-semibold mb-2">Main Favicon File</h4>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            For best compatibility, use this <code>.ico</code> file in your website's root directory.
+                        </p>
+                        <Button asChild size="lg">
+                            <a href={generatedIco} download="favicon.ico">
+                                <Download className="mr-2 h-5 w-5" />
+                                Download favicon.ico
+                            </a>
+                        </Button>
+                    </div>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {generatedFavicons.map((favicon) => (
                     <div
