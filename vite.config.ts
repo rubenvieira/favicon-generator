@@ -20,6 +20,6 @@ export default defineConfig(() => ({
     'process.env': {},
   },
   optimizeDeps: {
-    exclude: ['to-ico'],
+    exclude: [], // Removed 'to-ico'
   },
 }));
