@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
+import { toast } from "sonner";
 import { Download } from "lucide-react";
 import EmojiPalette from "@/components/EmojiPalette";
 import { Buffer } from "buffer";
@@ -29,21 +29,18 @@ const FAVICON_SIZES = [
   { size: 512, name: "android-chrome-512x512.png" },
 ];
 
-const icoSizes = [16, 32, 48]; // Sizes for ICO file
-
-// Proper ICO file format constants
-const ICO_HEADER_SIZE = 6;
-const ICO_DIR_ENTRY_SIZE = 16;
+const icoSizes = [16, 32, 48];
 
 // Helper function to create proper ICO file
 const createIcoFile = async (pngBuffers: Buffer[]): Promise<Blob> => {
-  // ICO header
-  const header = Buffer.alloc(ICO_HEADER_SIZE);
-  header.writeUInt16LE(0, 0); // Reserved
-  header.writeUInt16LE(1, 2); // ICO type
-  header.writeUInt16LE(pngBuffers.length, 4); // Number of images
+  const ICO_HEADER_SIZE = 6;
+  const ICO_DIR_ENTRY_SIZE = 16;
 
-  // Directory entries
+  const header = Buffer.alloc(ICO_HEADER_SIZE);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(pngBuffers.length, 4);
+
   const directoryEntries = [];
   let offset = ICO_HEADER_SIZE + (pngBuffers.length * ICO_DIR_ENTRY_SIZE);
 
@@ -52,14 +49,14 @@ const createIcoFile = async (pngBuffers: Buffer[]): Promise<Blob> => {
     const size = icoSizes[i];
     
     const entry = Buffer.alloc(ICO_DIR_ENTRY_SIZE);
-    entry.writeUInt8(size, 0); // Width
-    entry.writeUInt8(size, 1); // Height
-    entry.writeUInt8(0, 2); // Color palette
-    entry.writeUInt8(0, 3); // Reserved
-    entry.writeUInt16LE(1, 4); // Color planes
-    entry.writeUInt16LE(32, 6); // Bits per pixel
-    entry.writeUInt32LE(buffer.length, 8); // Image size
-    entry.writeUInt32LE(offset, 12); // Image offset
+    entry.writeUInt8(size, 0);
+    entry.writeUInt8(size, 1);
+    entry.writeUInt8(0, 2);
+    entry.writeUInt8(0, 3);
+    entry.writeUInt16LE(1, 4);
+    entry.writeUInt16LE(32, 6);
+    entry.writeUInt32LE(buffer.length, 8);
+    entry.writeUInt32LE(offset, 12);
     directoryEntries.push(entry);
     offset += buffer.length;
   }
@@ -86,7 +83,7 @@ const Index = () => {
     const file = event.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        showError("Please upload a valid image file.");
+        toast.error("Please upload a valid image file.");
         return;
       }
       setSelectedImage(file);
@@ -123,9 +120,10 @@ const Index = () => {
   };
 
   const handleGenerate = async () => {
+    if (!selectedImage && !selectedEmoji) return;
+    
     setIsLoading(true);
-    setGeneratedIco(null);
-    const toastId = showLoading("Generating favicons...");
+    const loadingToast = toast.loading("Generating favicons...");
 
     try {
       const favicons = [];
@@ -192,13 +190,11 @@ const Index = () => {
       const icoBlob = await createIcoFile(icoBuffers);
       setGeneratedIco(URL.createObjectURL(icoBlob));
 
-      dismissToast(toastId);
-      showSuccess("Favicons generated successfully!");
+      toast.success("Favicons generated successfully!");
     } catch (err: any) {
-      console.error(err);
-      dismissToast(toastId);
-      showError(err.message || "Failed to generate favicons.");
+      toast.error(err.message || "Failed to generate favicons.");
     } finally {
+      toast.dismiss();
       setIsLoading(false);
     }
   };
