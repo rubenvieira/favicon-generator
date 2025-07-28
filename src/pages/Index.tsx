@@ -20,6 +20,7 @@ interface GeneratedFavicon {
   size: string;
   url: string;
   filename: string;
+
 }
 
 const FAVICON_SIZES = [
