@@ -123,7 +123,11 @@ const Index = () => {
     if (!selectedImage && !selectedEmoji) return;
     
     setIsLoading(true);
-    const loadingToast = toast.loading("Generating favicons...");
+    
+    // Use a simple toast without ID management
+    const toastId = toast("Generating favicons...", {
+      duration: Infinity,
+    });
 
     try {
       const favicons = [];
@@ -194,6 +198,7 @@ const Index = () => {
     } catch (err: any) {
       toast.error(err.message || "Failed to generate favicons.");
     } finally {
+      // Use toast.dismiss() to clear all toasts
       toast.dismiss();
       setIsLoading(false);
     }
