@@ -195,9 +195,9 @@ const Index = () => {
       dismissToast(toastId);
       showSuccess("Favicons generated successfully!");
     } catch (err: any) {
+      console.error(err);
       dismissToast(toastId);
       showError(err.message || "Failed to generate favicons.");
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
