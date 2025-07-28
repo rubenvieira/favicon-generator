@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import EmojiPalette from "@/components/EmojiPalette";
 
 interface GeneratedFavicon {
@@ -300,7 +299,6 @@ const Index = () => {
             )}
           </CardContent>
         </Card>
-        <MadeWithDyad />
       </div>
     </div>
   );
