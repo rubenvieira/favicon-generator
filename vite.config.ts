@@ -15,4 +15,7 @@ export default defineConfig(() => ({
       "util": "util",
     },
   },
+  define: {
+    'process.env': {},
+  },
 }));
