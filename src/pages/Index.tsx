@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
 import EmojiPalette from "@/components/EmojiPalette";
-import toIco from "to-ico";
+import { ICO } from "icojs";
+import { Buffer } from "buffer";
 
 interface GeneratedFavicon {
   size: string;
@@ -184,7 +185,7 @@ const Index = () => {
             return bytes;
         };
 
-        const generatePngBuffer = (source: HTMLImageElement | string, size: number): Uint8Array => {
+        const generatePngBuffer = (source: HTMLImageElement | string, size: number): Buffer => {
             const canvas = document.createElement("canvas");
             canvas.width = size;
             canvas.height = size;
@@ -200,7 +201,7 @@ const Index = () => {
             } else { // Image
                 ctx.drawImage(source, 0, 0, size, size);
             }
-            return dataUrlToUint8Array(canvas.toDataURL('image/png'));
+            return Buffer.from(dataUrlToUint8Array(canvas.toDataURL('image/png')));
         };
 
         if (activeTab === 'image' && selectedImage) {
@@ -210,7 +211,7 @@ const Index = () => {
                 image.onload = async () => {
                     try {
                         const pngBuffers = icoSizes.map(size => generatePngBuffer(image, size));
-                        const icoBuffer = await toIco(pngBuffers);
+                        const icoBuffer = await ICO.encode(pngBuffers);
                         const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
                         setGeneratedIco(URL.createObjectURL(blob));
                         URL.revokeObjectURL(image.src);
@@ -227,7 +228,7 @@ const Index = () => {
         } else if (activeTab === 'emoji' && selectedEmoji) {
             const emoji = [...selectedEmoji][0];
             const pngBuffers = icoSizes.map(size => generatePngBuffer(emoji, size));
-            const icoBuffer = await toIco(pngBuffers);
+            const icoBuffer = await ICO.encode(pngBuffers);
             const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
             setGeneratedIco(URL.createObjectURL(blob));
         }
