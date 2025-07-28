@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import EmojiPalette from "@/components/EmojiPalette";
 
 interface GeneratedFavicon {
   size: string;
@@ -56,6 +57,15 @@ const Index = () => {
 
   const handleEmojiChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const emoji = event.target.value;
+    setSelectedEmoji(emoji);
+    if (emoji) {
+      setSelectedImage(null); // Clear image
+      setImagePreview(null);
+    }
+    setGeneratedFavicons([]);
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
     setSelectedEmoji(emoji);
     if (emoji) {
       setSelectedImage(null); // Clear image
@@ -226,6 +236,9 @@ const Index = () => {
                       maxLength={2}
                     />
                   </div>
+                  
+                  <EmojiPalette onSelectEmoji={handleEmojiSelect} />
+
                   {selectedEmoji && (
                     <div className="mt-4">
                       <h3 className="text-md font-medium mb-2">Emoji Preview:</h3>
