@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { Download } from "lucide-react";
 import EmojiPalette from "@/components/EmojiPalette";
-import { ICO } from "icojs";
+import ICO from "icojs";
 import { Buffer } from "buffer";
 
 interface GeneratedFavicon {
