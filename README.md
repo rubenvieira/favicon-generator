@@ -26,7 +26,3 @@ A simple yet powerful web application for creating favicons for your website. Th
 -   **Styling:** Tailwind CSS
 -   **UI Components:** shadcn/ui
 -   **Build Tool:** Vite
-
----
-
-This project was generated and edited with Dyad.
