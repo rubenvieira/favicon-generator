@@ -124,10 +124,8 @@ const Index = () => {
     
     setIsLoading(true);
     
-    // Use a simple toast without ID management
-    toast("Generating favicons...", {
-      duration: Infinity,
-    });
+    // Store the toast ID so we can dismiss it specifically
+    const toastId = toast.loading("Generating favicons...");
 
     try {
       const favicons = [];
@@ -198,8 +196,8 @@ const Index = () => {
     } catch (err: any) {
       toast.error(err.message || "Failed to generate favicons.");
     } finally {
-      // Use toast.dismiss() to clear all toasts
-      toast.dismiss();
+      // Dismiss the specific toast by its ID
+      toast.dismiss(toastId);
       setIsLoading(false);
     }
   };
