@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon, RotateCcw } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useCanvasRenderer } from '@/hooks/useCanvasRenderer';
 import { useFaviconGenerator } from '@/hooks/useFaviconGenerator';
 
 const DARK_MODE_KEY = 'favicon-gen-dark-mode';
+const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
 const Index = () => {
   const [darkMode, setDarkMode] = useState(() => {
@@ -53,7 +54,8 @@ const Index = () => {
     (state.input.mode === 'text' && !!state.input.text.text) ||
     (state.input.mode === 'svg' && !!state.input.svgDataUrl);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
+    if (!hasInput || state.generation.isGenerating || state.selectedSizes.length === 0) return;
     try {
       await generate(state.input, state.customization, state.selectedSizes, state.siteName);
       toast.success('Favicons generated successfully!');
@@ -61,7 +63,19 @@ const Index = () => {
       const message = err instanceof Error ? err.message : 'Failed to generate favicons.';
       toast.error(message);
     }
-  };
+  }, [hasInput, state, generate]);
+
+  // Keyboard shortcut: Ctrl+Enter / Cmd+Enter to generate
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleGenerate();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleGenerate]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -123,7 +137,7 @@ const Index = () => {
 
           {/* Right Column: Preview + Output */}
           <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <PreviewPanel previewUrl={previewUrl} />
+            <PreviewPanel previewUrl={previewUrl} siteName={state.siteName} />
 
             <OutputPanel
               result={state.generation.result}
@@ -134,6 +148,7 @@ const Index = () => {
               onGenerate={handleGenerate}
               siteName={state.siteName}
               onSiteNameChange={setSiteName}
+              shortcutHint={isMac ? '\u2318\u21B5' : 'Ctrl+\u21B5'}
             />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Loader2 } from 'lucide-react';
 import DownloadSection from './output/DownloadSection';
 import CodeSnippetSection from './output/CodeSnippetSection';
 import SizeSelector from './output/SizeSelector';
@@ -18,6 +18,7 @@ interface OutputPanelProps {
   onGenerate: () => void;
   siteName: string;
   onSiteNameChange: (name: string) => void;
+  shortcutHint?: string;
 }
 
 export default function OutputPanel({
@@ -29,6 +30,7 @@ export default function OutputPanel({
   onGenerate,
   siteName,
   onSiteNameChange,
+  shortcutHint,
 }: OutputPanelProps) {
   return (
     <Card>
@@ -45,7 +47,7 @@ export default function OutputPanel({
             placeholder="My Website"
             className="mt-1.5"
           />
-          <p className="text-[10px] text-muted-foreground mt-1">Used in manifest.json</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Used in manifest.json and HTML meta tags</p>
         </div>
 
         <Separator />
@@ -61,19 +63,33 @@ export default function OutputPanel({
           onClick={onGenerate}
           disabled={!hasInput || isGenerating || selectedSizes.length === 0}
           size="lg"
-          className="w-full"
+          className="w-full relative"
         >
-          <Wand2 className="mr-2 h-5 w-5" />
-          {isGenerating ? 'Generating...' : 'Generate Favicons'}
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Generating {selectedSizes.length} sizes...
+            </>
+          ) : (
+            <>
+              <Wand2 className="mr-2 h-5 w-5" />
+              Generate Favicons
+              {shortcutHint && (
+                <kbd className="ml-2 text-[10px] opacity-60 bg-primary-foreground/10 px-1.5 py-0.5 rounded">
+                  {shortcutHint}
+                </kbd>
+              )}
+            </>
+          )}
         </Button>
 
         {result && (
-          <>
-            <Separator />
+          <div className="animate-slide-up">
+            <Separator className="mb-4" />
             <DownloadSection result={result} />
-            <Separator />
+            <Separator className="my-4" />
             <CodeSnippetSection result={result} />
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

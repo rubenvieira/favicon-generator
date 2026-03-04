@@ -31,7 +31,7 @@ export function useFaviconGenerator(dispatch: GenerateDispatch) {
 
       const manifestJson = generateManifestJson(files, siteName, themeColor);
       const browserconfigXml = generateBrowserconfigXml(files, themeColor);
-      const htmlSnippet = generateHtmlSnippet(files, themeColor);
+      const htmlSnippet = generateHtmlSnippet(files, themeColor, siteName);
 
       const result: GenerationResult = {
         files,

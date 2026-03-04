@@ -57,40 +57,60 @@ ${tileEntries.join('\n')}
 </browserconfig>`;
 }
 
-export function generateHtmlSnippet(files: GeneratedFile[], themeColor: string): string {
+export function generateHtmlSnippet(files: GeneratedFile[], themeColor: string, siteName: string): string {
   const lines: string[] = [];
 
+  // Favicon section
   const hasIco = files.some(f => f.filename === 'favicon.ico');
-  if (hasIco) {
-    lines.push('<link rel="icon" type="image/x-icon" href="/favicon.ico">');
-  }
-
   const hasSvg = files.some(f => f.filename === 'favicon.svg');
-  if (hasSvg) {
-    lines.push('<link rel="icon" type="image/svg+xml" href="/favicon.svg">');
-  }
-
   const pngFavicons = files.filter(f => f.category === 'favicon' && f.filename.endsWith('.png'));
-  for (const f of pngFavicons) {
-    lines.push(`<link rel="icon" type="image/png" sizes="${f.size}" href="/${f.filename}">`);
+
+  if (hasIco || hasSvg || pngFavicons.length > 0) {
+    lines.push('<!-- Favicon -->');
+    if (hasIco) {
+      lines.push('<link rel="icon" type="image/x-icon" href="/favicon.ico">');
+    }
+    if (hasSvg) {
+      lines.push('<link rel="icon" type="image/svg+xml" href="/favicon.svg">');
+    }
+    for (const f of pngFavicons) {
+      lines.push(`<link rel="icon" type="image/png" sizes="${f.size}" href="/${f.filename}">`);
+    }
   }
 
+  // Apple section
   const apple = files.find(f => f.category === 'apple');
   if (apple) {
+    lines.push('');
+    lines.push('<!-- Apple -->');
     lines.push(`<link rel="apple-touch-icon" sizes="${apple.size}" href="/${apple.filename}">`);
+    lines.push('<meta name="apple-mobile-web-app-capable" content="yes">');
+    lines.push('<meta name="apple-mobile-web-app-status-bar-style" content="default">');
+    if (siteName) {
+      lines.push(`<meta name="apple-mobile-web-app-title" content="${siteName}">`);
+    }
   }
 
+  // Android / PWA section
   const hasAndroid = files.some(f => f.category === 'android');
   if (hasAndroid) {
+    lines.push('');
+    lines.push('<!-- Android / PWA -->');
     lines.push('<link rel="manifest" href="/manifest.json">');
   }
 
+  // Microsoft section
   const hasMsTile = files.some(f => f.category === 'mstile');
   if (hasMsTile) {
+    lines.push('');
+    lines.push('<!-- Microsoft -->');
     lines.push(`<meta name="msapplication-TileColor" content="${themeColor}">`);
     lines.push('<meta name="msapplication-config" content="/browserconfig.xml">');
   }
 
+  // Theme
+  lines.push('');
+  lines.push('<!-- Theme -->');
   lines.push(`<meta name="theme-color" content="${themeColor}">`);
 
   return lines.join('\n');
