@@ -1,4 +1,4 @@
-import type { SizeConfig, CustomizationSettings, TextSettings } from './favicon-types';
+import type { SizeConfig, CustomizationSettings, TextSettings, BackgroundSettings } from './favicon-types';
 
 export const ALL_SIZES: SizeConfig[] = [
   { width: 16, height: 16, filename: 'favicon-16x16.png', category: 'favicon', label: 'Favicon 16x16', required: true },
@@ -19,13 +19,35 @@ export const ALL_SIZES: SizeConfig[] = [
 
 export const ICO_SIZES = [16, 32, 48];
 
+export const DEFAULT_BACKGROUND: BackgroundSettings = {
+  type: 'solid',
+  color: '#ffffff',
+  gradient: {
+    stops: [
+      { color: '#3b82f6', position: 0 },
+      { color: '#8b5cf6', position: 100 },
+    ],
+    angle: 135,
+  },
+};
+
 export const DEFAULT_CUSTOMIZATION: CustomizationSettings = {
   backgroundColor: '#ffffff',
   backgroundEnabled: false,
+  background: DEFAULT_BACKGROUND,
   padding: 0,
   borderRadius: 0,
   shadow: { enabled: false, color: '#00000040', blur: 4, offsetX: 0, offsetY: 2 },
 };
+
+export const GRADIENT_PRESETS = [
+  { label: 'Ocean', stops: [{ color: '#667eea', position: 0 }, { color: '#764ba2', position: 100 }], angle: 135 },
+  { label: 'Sunset', stops: [{ color: '#f093fb', position: 0 }, { color: '#f5576c', position: 100 }], angle: 135 },
+  { label: 'Forest', stops: [{ color: '#11998e', position: 0 }, { color: '#38ef7d', position: 100 }], angle: 135 },
+  { label: 'Fire', stops: [{ color: '#f12711', position: 0 }, { color: '#f5af19', position: 100 }], angle: 135 },
+  { label: 'Sky', stops: [{ color: '#a1c4fd', position: 0 }, { color: '#c2e9fb', position: 100 }], angle: 135 },
+  { label: 'Night', stops: [{ color: '#0f0c29', position: 0 }, { color: '#302b63', position: 50 }, { color: '#24243e', position: 100 }], angle: 135 },
+];
 
 export const DEFAULT_TEXT_SETTINGS: TextSettings = {
   text: 'A',

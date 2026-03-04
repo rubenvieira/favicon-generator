@@ -6,27 +6,34 @@ import type {
   TextSettings,
   InputMode,
   GenerationResult,
+  ImageFit,
+  BackgroundSettings,
 } from '@/lib/favicon-types';
 import { DEFAULT_CUSTOMIZATION, DEFAULT_TEXT_SETTINGS, DEFAULT_SELECTED_SIZES } from '@/lib/favicon-constants';
 
 type Action =
   | { type: 'SET_INPUT_MODE'; mode: InputMode }
   | { type: 'SET_IMAGE'; file: File | null; dataUrl: string | null }
+  | { type: 'SET_IMAGE_FIT'; fit: ImageFit }
   | { type: 'SET_EMOJI'; emoji: string }
   | { type: 'SET_TEXT_SETTINGS'; settings: Partial<TextSettings> }
   | { type: 'SET_SVG'; content: string | null; dataUrl: string | null }
   | { type: 'SET_CUSTOMIZATION'; settings: Partial<CustomizationSettings> }
   | { type: 'SET_SHADOW'; shadow: Partial<CustomizationSettings['shadow']> }
+  | { type: 'SET_BACKGROUND'; background: Partial<BackgroundSettings> }
   | { type: 'SET_SELECTED_SIZES'; sizes: string[] }
+  | { type: 'SET_SITE_NAME'; name: string }
   | { type: 'GENERATION_START' }
   | { type: 'GENERATION_SUCCESS'; result: GenerationResult }
   | { type: 'GENERATION_ERROR'; error: string }
-  | { type: 'RESET_GENERATION' };
+  | { type: 'RESET_GENERATION' }
+  | { type: 'RESET_ALL' };
 
 const initialInput: FaviconInput = {
   mode: 'image',
   imageFile: null,
   imageDataUrl: null,
+  imageFit: 'fill',
   emoji: '',
   text: DEFAULT_TEXT_SETTINGS,
   svgContent: null,
@@ -42,6 +49,7 @@ const initialState: FaviconAppState = {
     error: null,
   },
   selectedSizes: DEFAULT_SELECTED_SIZES,
+  siteName: '',
 };
 
 function reducer(state: FaviconAppState, action: Action): FaviconAppState {
@@ -61,6 +69,13 @@ function reducer(state: FaviconAppState, action: Action): FaviconAppState {
           imageFile: action.file,
           imageDataUrl: action.dataUrl,
         },
+        generation: { ...state.generation, result: null, error: null },
+      };
+
+    case 'SET_IMAGE_FIT':
+      return {
+        ...state,
+        input: { ...state.input, imageFit: action.fit },
         generation: { ...state.generation, result: null, error: null },
       };
 
@@ -109,10 +124,27 @@ function reducer(state: FaviconAppState, action: Action): FaviconAppState {
         generation: { ...state.generation, result: null, error: null },
       };
 
+    case 'SET_BACKGROUND':
+      return {
+        ...state,
+        customization: {
+          ...state.customization,
+          background: { ...state.customization.background, ...action.background },
+        },
+        generation: { ...state.generation, result: null, error: null },
+      };
+
     case 'SET_SELECTED_SIZES':
       return {
         ...state,
         selectedSizes: action.sizes,
+        generation: { ...state.generation, result: null, error: null },
+      };
+
+    case 'SET_SITE_NAME':
+      return {
+        ...state,
+        siteName: action.name,
         generation: { ...state.generation, result: null, error: null },
       };
 
@@ -140,6 +172,9 @@ function reducer(state: FaviconAppState, action: Action): FaviconAppState {
         generation: { isGenerating: false, result: null, error: null },
       };
 
+    case 'RESET_ALL':
+      return initialState;
+
     default:
       return state;
   }
@@ -154,6 +189,10 @@ export function useFaviconState() {
 
   const setImage = useCallback((file: File | null, dataUrl: string | null) => {
     dispatch({ type: 'SET_IMAGE', file, dataUrl });
+  }, []);
+
+  const setImageFit = useCallback((fit: ImageFit) => {
+    dispatch({ type: 'SET_IMAGE_FIT', fit });
   }, []);
 
   const setEmoji = useCallback((emoji: string) => {
@@ -176,8 +215,20 @@ export function useFaviconState() {
     dispatch({ type: 'SET_SHADOW', shadow });
   }, []);
 
+  const setBackground = useCallback((background: Partial<BackgroundSettings>) => {
+    dispatch({ type: 'SET_BACKGROUND', background });
+  }, []);
+
   const setSelectedSizes = useCallback((sizes: string[]) => {
     dispatch({ type: 'SET_SELECTED_SIZES', sizes });
+  }, []);
+
+  const setSiteName = useCallback((name: string) => {
+    dispatch({ type: 'SET_SITE_NAME', name });
+  }, []);
+
+  const resetAll = useCallback(() => {
+    dispatch({ type: 'RESET_ALL' });
   }, []);
 
   return {
@@ -185,11 +236,15 @@ export function useFaviconState() {
     dispatch,
     setInputMode,
     setImage,
+    setImageFit,
     setEmoji,
     setTextSettings,
     setSvg,
     setCustomization,
     setShadow,
+    setBackground,
     setSelectedSizes,
+    setSiteName,
+    resetAll,
   };
 }

@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Wand2 } from 'lucide-react';
 import DownloadSection from './output/DownloadSection';
 import CodeSnippetSection from './output/CodeSnippetSection';
@@ -14,6 +16,8 @@ interface OutputPanelProps {
   selectedSizes: string[];
   onSelectedSizesChange: (sizes: string[]) => void;
   onGenerate: () => void;
+  siteName: string;
+  onSiteNameChange: (name: string) => void;
 }
 
 export default function OutputPanel({
@@ -23,6 +27,8 @@ export default function OutputPanel({
   selectedSizes,
   onSelectedSizesChange,
   onGenerate,
+  siteName,
+  onSiteNameChange,
 }: OutputPanelProps) {
   return (
     <Card>
@@ -30,6 +36,20 @@ export default function OutputPanel({
         <CardTitle className="text-lg">Output</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="site-name" className="text-sm font-medium">Site Name</Label>
+          <Input
+            id="site-name"
+            value={siteName}
+            onChange={(e) => onSiteNameChange(e.target.value)}
+            placeholder="My Website"
+            className="mt-1.5"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">Used in manifest.json</p>
+        </div>
+
+        <Separator />
+
         <SizeSelector
           selectedSizes={selectedSizes}
           onChange={onSelectedSizesChange}

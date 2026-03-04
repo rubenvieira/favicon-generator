@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, RotateCcw } from 'lucide-react';
 import InputPanel from '@/components/favicon/InputPanel';
 import CustomizationPanel from '@/components/favicon/CustomizationPanel';
 import PreviewPanel from '@/components/favicon/PreviewPanel';
@@ -10,9 +10,13 @@ import { useFaviconState } from '@/hooks/useFaviconState';
 import { useCanvasRenderer } from '@/hooks/useCanvasRenderer';
 import { useFaviconGenerator } from '@/hooks/useFaviconGenerator';
 
+const DARK_MODE_KEY = 'favicon-gen-dark-mode';
+
 const Index = () => {
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(DARK_MODE_KEY);
+      if (saved !== null) return saved === 'true';
       return document.documentElement.classList.contains('dark');
     }
     return false;
@@ -20,6 +24,7 @@ const Index = () => {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem(DARK_MODE_KEY, String(darkMode));
   }, [darkMode]);
 
   const {
@@ -27,12 +32,16 @@ const Index = () => {
     dispatch,
     setInputMode,
     setImage,
+    setImageFit,
     setEmoji,
     setTextSettings,
     setSvg,
     setCustomization,
     setShadow,
+    setBackground,
     setSelectedSizes,
+    setSiteName,
+    resetAll,
   } = useFaviconState();
 
   const { previewUrl } = useCanvasRenderer(state.input, state.customization);
@@ -46,10 +55,11 @@ const Index = () => {
 
   const handleGenerate = async () => {
     try {
-      await generate(state.input, state.customization, state.selectedSizes);
+      await generate(state.input, state.customization, state.selectedSizes, state.siteName);
       toast.success('Favicons generated successfully!');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to generate favicons.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to generate favicons.';
+      toast.error(message);
     }
   };
 
@@ -67,7 +77,16 @@ const Index = () => {
               Create professional favicons from images, emojis, text, or SVGs.
             </p>
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={resetAll}
+              className="h-9 w-9"
+              title="Reset all settings"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -88,6 +107,7 @@ const Index = () => {
               onModeChange={setInputMode}
               onImageSelect={(file, dataUrl) => setImage(file, dataUrl)}
               onImageClear={() => setImage(null, null)}
+              onImageFitChange={setImageFit}
               onEmojiChange={setEmoji}
               onTextChange={setTextSettings}
               onSvgChange={setSvg}
@@ -97,6 +117,7 @@ const Index = () => {
               customization={state.customization}
               onCustomizationChange={setCustomization}
               onShadowChange={setShadow}
+              onBackgroundChange={setBackground}
             />
           </div>
 
@@ -111,6 +132,8 @@ const Index = () => {
               selectedSizes={state.selectedSizes}
               onSelectedSizesChange={setSelectedSizes}
               onGenerate={handleGenerate}
+              siteName={state.siteName}
+              onSiteNameChange={setSiteName}
             />
           </div>
         </div>

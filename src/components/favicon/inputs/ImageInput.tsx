@@ -6,14 +6,23 @@ import { Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import type { ImageFit } from '@/lib/favicon-types';
 
 interface ImageInputProps {
   imagePreview: string | null;
+  imageFit: ImageFit;
   onImageSelect: (file: File, dataUrl: string) => void;
   onClear: () => void;
+  onFitChange: (fit: ImageFit) => void;
 }
 
-export default function ImageInput({ imagePreview, onImageSelect, onClear }: ImageInputProps) {
+const FIT_OPTIONS: { value: ImageFit; label: string; description: string }[] = [
+  { value: 'fill', label: 'Fill', description: 'Stretch to fill' },
+  { value: 'contain', label: 'Contain', description: 'Fit inside' },
+  { value: 'cover', label: 'Cover', description: 'Cover & crop' },
+];
+
+export default function ImageInput({ imagePreview, imageFit, onImageSelect, onClear, onFitChange }: ImageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
@@ -80,6 +89,29 @@ export default function ImageInput({ imagePreview, onImageSelect, onClear }: Ima
           <p className="text-xs text-muted-foreground/60 mt-1">
             PNG, JPG, SVG, WebP supported
           </p>
+        </div>
+      )}
+
+      {imagePreview && (
+        <div>
+          <Label className="text-xs text-muted-foreground">Image Fit</Label>
+          <div className="flex gap-1.5 mt-1.5">
+            {FIT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => onFitChange(opt.value)}
+                className={cn(
+                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors border',
+                  imageFit === opt.value
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted/30 hover:bg-muted/60 border-transparent'
+                )}
+                title={opt.description}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

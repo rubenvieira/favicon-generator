@@ -5,13 +5,14 @@ import ImageInput from './inputs/ImageInput';
 import EmojiInput from './inputs/EmojiInput';
 import TextInput from './inputs/TextInput';
 import SvgInput from './inputs/SvgInput';
-import type { FaviconInput, InputMode, TextSettings } from '@/lib/favicon-types';
+import type { FaviconInput, InputMode, TextSettings, ImageFit } from '@/lib/favicon-types';
 
 interface InputPanelProps {
   input: FaviconInput;
   onModeChange: (mode: InputMode) => void;
   onImageSelect: (file: File, dataUrl: string) => void;
   onImageClear: () => void;
+  onImageFitChange: (fit: ImageFit) => void;
   onEmojiChange: (emoji: string) => void;
   onTextChange: (settings: Partial<TextSettings>) => void;
   onSvgChange: (content: string | null, dataUrl: string | null) => void;
@@ -22,6 +23,7 @@ export default function InputPanel({
   onModeChange,
   onImageSelect,
   onImageClear,
+  onImageFitChange,
   onEmojiChange,
   onTextChange,
   onSvgChange,
@@ -55,8 +57,10 @@ export default function InputPanel({
           <TabsContent value="image" className="mt-4">
             <ImageInput
               imagePreview={input.imageDataUrl}
+              imageFit={input.imageFit}
               onImageSelect={onImageSelect}
               onClear={onImageClear}
+              onFitChange={onImageFitChange}
             />
           </TabsContent>
 

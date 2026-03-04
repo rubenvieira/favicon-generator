@@ -21,6 +21,49 @@ function roundedRect(
   ctx.closePath();
 }
 
+function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  customization: CustomizationSettings,
+  width: number,
+  height: number
+) {
+  if (!customization.backgroundEnabled) return;
+
+  const bg = customization.background;
+
+  if (bg.type === 'solid') {
+    ctx.fillStyle = bg.color;
+    ctx.fillRect(0, 0, width, height);
+  } else if (bg.type === 'linear-gradient') {
+    const angle = (bg.gradient.angle * Math.PI) / 180;
+    const cx = width / 2;
+    const cy = height / 2;
+    const len = Math.max(width, height);
+    const x1 = cx - Math.cos(angle) * len / 2;
+    const y1 = cy - Math.sin(angle) * len / 2;
+    const x2 = cx + Math.cos(angle) * len / 2;
+    const y2 = cy + Math.sin(angle) * len / 2;
+
+    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+    for (const stop of bg.gradient.stops) {
+      gradient.addColorStop(stop.position / 100, stop.color);
+    }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  } else if (bg.type === 'radial-gradient') {
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = Math.max(width, height) / 2;
+
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    for (const stop of bg.gradient.stops) {
+      gradient.addColorStop(stop.position / 100, stop.color);
+    }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+}
+
 export async function renderToCanvas(
   canvas: HTMLCanvasElement,
   input: FaviconInput,
@@ -42,11 +85,8 @@ export async function renderToCanvas(
     ctx.clip();
   }
 
-  // Draw background
-  if (customization.backgroundEnabled) {
-    ctx.fillStyle = customization.backgroundColor;
-    ctx.fillRect(0, 0, width, height);
-  }
+  // Draw background (solid or gradient)
+  drawBackground(ctx, customization, width, height);
 
   // Calculate content area with padding
   const paddingPx = (customization.padding / 100) * Math.min(width, height);
@@ -73,7 +113,30 @@ export async function renderToCanvas(
     case 'image':
       if (input.imageDataUrl) {
         const img = await loadImage(input.imageDataUrl);
-        ctx.drawImage(img, contentX, contentY, contentW, contentH);
+        const fit = input.imageFit || 'fill';
+
+        if (fit === 'fill') {
+          ctx.drawImage(img, contentX, contentY, contentW, contentH);
+        } else if (fit === 'contain') {
+          const scale = Math.min(contentW / img.naturalWidth, contentH / img.naturalHeight);
+          const drawW = img.naturalWidth * scale;
+          const drawH = img.naturalHeight * scale;
+          const drawX = contentX + (contentW - drawW) / 2;
+          const drawY = contentY + (contentH - drawH) / 2;
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        } else if (fit === 'cover') {
+          const scale = Math.max(contentW / img.naturalWidth, contentH / img.naturalHeight);
+          const drawW = img.naturalWidth * scale;
+          const drawH = img.naturalHeight * scale;
+          const drawX = contentX + (contentW - drawW) / 2;
+          const drawY = contentY + (contentH - drawH) / 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(contentX, contentY, contentW, contentH);
+          ctx.clip();
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.restore();
+        }
       }
       break;
 
@@ -170,11 +233,29 @@ export async function createIcoFile(pngBuffers: Buffer[]): Promise<Blob> {
   return new Blob([icoBuffer], { type: 'image/x-icon' });
 }
 
+// Track object URLs for cleanup
+const objectUrls: string[] = [];
+
+function trackObjectUrl(url: string): string {
+  objectUrls.push(url);
+  return url;
+}
+
+export function revokeGeneratedUrls() {
+  for (const url of objectUrls) {
+    URL.revokeObjectURL(url);
+  }
+  objectUrls.length = 0;
+}
+
 export async function generateAllFiles(
   input: FaviconInput,
   customization: CustomizationSettings,
   selectedSizes: SizeConfig[]
 ): Promise<GeneratedFile[]> {
+  // Clean up previous object URLs
+  revokeGeneratedUrls();
+
   const files: GeneratedFile[] = [];
 
   // Generate PNG files for each selected size
@@ -206,10 +287,22 @@ export async function generateAllFiles(
   files.push({
     filename: 'favicon.ico',
     size: 'multi',
-    dataUrl: URL.createObjectURL(icoBlob),
+    dataUrl: trackObjectUrl(URL.createObjectURL(icoBlob)),
     blob: icoBlob,
     category: 'ico',
   });
+
+  // Generate SVG favicon if input is SVG
+  if (input.mode === 'svg' && input.svgContent) {
+    const svgBlob = new Blob([input.svgContent], { type: 'image/svg+xml' });
+    files.push({
+      filename: 'favicon.svg',
+      size: 'scalable',
+      dataUrl: trackObjectUrl(URL.createObjectURL(svgBlob)),
+      blob: svgBlob,
+      category: 'svg',
+    });
+  }
 
   return files;
 }

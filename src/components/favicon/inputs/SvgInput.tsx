@@ -4,9 +4,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useImageDragDrop } from '@/hooks/useImageDragDrop';
-import { Upload, X, FileCode } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { validateSvg, sanitizeSvg } from '@/lib/favicon-utils';
 
 interface SvgInputProps {
   svgContent: string | null;
@@ -18,30 +19,30 @@ function svgToDataUrl(svgString: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
 }
 
-function validateSvg(content: string): boolean {
-  return content.trim().includes('<svg');
-}
-
 export default function SvgInput({ svgContent, svgDataUrl, onSvgChange }: SvgInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSvgContent = (content: string) => {
-    if (!validateSvg(content)) {
-      toast.error('Invalid SVG: must contain an <svg> element.');
+    const result = validateSvg(content);
+    if (!result.valid) {
+      toast.error(result.error || 'Invalid SVG.');
       return;
     }
-    onSvgChange(content, svgToDataUrl(content));
+    const sanitized = sanitizeSvg(content);
+    onSvgChange(sanitized, svgToDataUrl(sanitized));
   };
 
   const handleFile = (file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const content = reader.result as string;
-      if (!validateSvg(content)) {
-        toast.error('Invalid SVG file.');
+      const result = validateSvg(content);
+      if (!result.valid) {
+        toast.error(result.error || 'Invalid SVG file.');
         return;
       }
-      onSvgChange(content, svgToDataUrl(content));
+      const sanitized = sanitizeSvg(content);
+      onSvgChange(sanitized, svgToDataUrl(sanitized));
     };
     reader.readAsText(file);
   };

@@ -1,8 +1,27 @@
 export type InputMode = 'image' | 'emoji' | 'text' | 'svg';
 
+export type ImageFit = 'fill' | 'contain' | 'cover';
+
+export type BackgroundType = 'solid' | 'linear-gradient' | 'radial-gradient';
+
+export interface GradientStop {
+  color: string;
+  position: number;
+}
+
+export interface BackgroundSettings {
+  type: BackgroundType;
+  color: string;
+  gradient: {
+    stops: GradientStop[];
+    angle: number;
+  };
+}
+
 export interface CustomizationSettings {
   backgroundColor: string;
   backgroundEnabled: boolean;
+  background: BackgroundSettings;
   padding: number;
   borderRadius: number;
   shadow: {
@@ -25,6 +44,7 @@ export interface FaviconInput {
   mode: InputMode;
   imageFile: File | null;
   imageDataUrl: string | null;
+  imageFit: ImageFit;
   emoji: string;
   text: TextSettings;
   svgContent: string | null;
@@ -64,4 +84,5 @@ export interface FaviconAppState {
     error: string | null;
   };
   selectedSizes: string[];
+  siteName: string;
 }

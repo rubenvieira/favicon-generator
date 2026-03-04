@@ -4,18 +4,20 @@ import BackgroundPicker from './customization/BackgroundPicker';
 import PaddingControl from './customization/PaddingControl';
 import BorderRadiusControl from './customization/BorderRadiusControl';
 import ShadowControl from './customization/ShadowControl';
-import type { CustomizationSettings } from '@/lib/favicon-types';
+import type { CustomizationSettings, BackgroundSettings } from '@/lib/favicon-types';
 
 interface CustomizationPanelProps {
   customization: CustomizationSettings;
   onCustomizationChange: (settings: Partial<CustomizationSettings>) => void;
   onShadowChange: (shadow: Partial<CustomizationSettings['shadow']>) => void;
+  onBackgroundChange: (background: Partial<BackgroundSettings>) => void;
 }
 
 export default function CustomizationPanel({
   customization,
   onCustomizationChange,
   onShadowChange,
+  onBackgroundChange,
 }: CustomizationPanelProps) {
   return (
     <Card>
@@ -25,13 +27,11 @@ export default function CustomizationPanel({
       <CardContent className="space-y-4">
         <BackgroundPicker
           enabled={customization.backgroundEnabled}
-          color={customization.backgroundColor}
+          background={customization.background}
           onEnabledChange={(backgroundEnabled) =>
             onCustomizationChange({ backgroundEnabled })
           }
-          onColorChange={(backgroundColor) =>
-            onCustomizationChange({ backgroundColor })
-          }
+          onBackgroundChange={onBackgroundChange}
         />
 
         <Separator />
