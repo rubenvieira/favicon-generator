@@ -25,9 +25,15 @@ const FIT_OPTIONS: { value: ImageFit; label: string; description: string }[] = [
 export default function ImageInput({ imagePreview, imageFit, onImageSelect, onClear, onFitChange }: ImageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload a valid image file.');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Image must be under 10MB.');
       return;
     }
     const reader = new FileReader();
@@ -87,7 +93,7 @@ export default function ImageInput({ imagePreview, imageFit, onImageSelect, onCl
             Drag & drop an image here, or click to browse
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            PNG, JPG, SVG, WebP supported
+            PNG, JPG, SVG, WebP supported (max 10MB)
           </p>
         </div>
       )}
