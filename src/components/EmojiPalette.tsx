@@ -8,44 +8,95 @@ interface EmojiPaletteProps {
   onSelectEmoji: (emoji: string) => void;
 }
 
+const CATEGORIES = [
+  { key: 'all', label: 'Popular', icon: '⭐' },
+  { key: 'Smileys & Emotion', label: 'Smileys', icon: '😀' },
+  { key: 'People & Body', label: 'People', icon: '👋' },
+  { key: 'Animals & Nature', label: 'Nature', icon: '🌿' },
+  { key: 'Food & Drink', label: 'Food', icon: '🍕' },
+  { key: 'Travel & Places', label: 'Travel', icon: '🌍' },
+  { key: 'Activities', label: 'Fun', icon: '⚽' },
+  { key: 'Objects', label: 'Objects', icon: '💡' },
+  { key: 'Symbols', label: 'Symbols', icon: '❤️' },
+  { key: 'Flags', label: 'Flags', icon: '🏁' },
+];
+
+const POPULAR_EMOJIS = ['✨', '🚀', '❤️', '🎉', '💡', '✅', '🔥', '⭐', '👋', '⚙️', '💻', '🌍', '🎨', '🎵', '🍔', '🍕', '🥑', '🤖', '🦄', '🐧', '🧠', '💬', '👀', '💧', '🌱', '⚡', '🔑', '🔒', '🔔'];
+
 const EmojiPalette: React.FC<EmojiPaletteProps> = ({ onSelectEmoji }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const filteredEmojis = useMemo(() => {
-    if (!searchTerm) {
-      // Return a curated subset of popular emojis when search is empty
-      return EMOJI_DATA.filter(e => ['✨', '🚀', '❤️', '🎉', '💡', '✅', '🔥', '⭐', '👋', '⚙️', '💻', '🌍', '🎨', '🎵', '🍔', '🍕', '🥑', '🤖', '🦄', '🐧', '💡', '🧠', '💬', '👀', '💧', '🌱', '⚡️', '🔑', '🔒', '🔔'].includes(e.emoji));
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      return EMOJI_DATA.filter(emoji =>
+        emoji.description.includes(lower) ||
+        emoji.aliases.some(alias => alias.includes(lower)) ||
+        emoji.tags.some(tag => tag.includes(lower))
+      );
     }
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return EMOJI_DATA.filter(emoji =>
-      emoji.description.includes(lowerCaseSearchTerm) ||
-      emoji.aliases.some(alias => alias.includes(lowerCaseSearchTerm)) ||
-      emoji.tags.some(tag => tag.includes(lowerCaseSearchTerm))
-    );
-  }, [searchTerm]);
+
+    if (selectedCategory === 'all') {
+      return EMOJI_DATA.filter(e => POPULAR_EMOJIS.includes(e.emoji));
+    }
+
+    return EMOJI_DATA.filter(e => e.category === selectedCategory);
+  }, [searchTerm, selectedCategory]);
 
   return (
-    <div className="mt-4">
+    <div className="space-y-3">
       <Input
         type="text"
-        placeholder="Search for an emoji (e.g., 'happy', 'car')"
+        placeholder="Search emojis..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="mb-4"
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          if (e.target.value) setSelectedCategory('all');
+        }}
+        className="h-9"
       />
-      <ScrollArea className="h-60 w-full pr-4">
-        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 justify-center">
+
+      {!searchTerm && (
+        <ScrollArea className="w-full">
+          <div className="flex gap-1 pb-1">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setSelectedCategory(cat.key)}
+                className={`shrink-0 px-2 py-1 rounded-md text-xs transition-colors ${
+                  selectedCategory === cat.key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted text-muted-foreground'
+                }`}
+                title={cat.label}
+              >
+                <span className="mr-0.5">{cat.icon}</span>
+                <span className="hidden sm:inline">{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+
+      <ScrollArea className="h-48 w-full">
+        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
           {filteredEmojis.map((emoji) => (
             <Button
               key={emoji.emoji + emoji.description}
-              variant="outline"
-              className="text-2xl p-2 aspect-square h-auto w-auto transition-transform hover:scale-110"
+              variant="ghost"
+              className="text-xl p-1 aspect-square h-auto w-auto transition-transform hover:scale-110 hover:bg-muted"
               onClick={() => onSelectEmoji(emoji.emoji)}
               title={emoji.description}
             >
               {emoji.emoji}
             </Button>
           ))}
+          {filteredEmojis.length === 0 && (
+            <p className="col-span-full text-center text-sm text-muted-foreground py-4">
+              No emojis found
+            </p>
+          )}
         </div>
       </ScrollArea>
     </div>
