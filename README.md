@@ -26,3 +26,29 @@ A simple yet powerful web application for creating favicons for your website. Th
 -   **Styling:** Tailwind CSS
 -   **UI Components:** shadcn/ui
 -   **Build Tool:** Vite
+
+## Local Development Setup
+
+To run this project locally, follow these steps:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/rubenvieira/favicon-generator.git
+   cd favicon-generator
+   ```
+
+2. Install the dependencies (this project uses `pnpm`):
+   ```bash
+   pnpm install
+   ```
+
+3. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+4. Open your browser and navigate to the URL provided in the terminal (usually `http://localhost:5173`).
+
+## License
+
+This project is licensed under the MIT License.

@@ -1,7 +1,17 @@
 {
   "name": "favicon-generator",
-  "private": true,
   "version": "0.0.0",
+  "description": "A simple favicon generator built with React and TypeScript. Create custom favicons from images or emojis in seconds.",
+  "keywords": [
+    "favicon",
+    "generator",
+    "react",
+    "typescript",
+    "vite",
+    "emoji",
+    "image",
+    "tools"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
